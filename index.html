@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101827" />
+    <meta
+      name="description"
+      content="Узнай текущую погоду, температуру и прогноз по часам в своём городе."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Atmos — погода в твоём городе" />
+    <meta
+      property="og:description"
+      content="Текущая погода и почасовой прогноз в современном интерфейсе."
+    />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Atmos" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Atmos — погода в твоём городе</title>
+
+    <!-- Tailwind CSS + daisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Шрифт -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Иконки -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Анимации -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+
+    <!-- Слайдер -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .install-banner {
+        background: rgba(15, 23, 42, 0.88);
+      }
+      body {
+        font-family: Inter, sans-serif;
+        min-height: 100vh;
+        color: #f8fafc;
+        background: #101827;
+        transition: background 1s ease;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse at 15% 5%, var(--glow1), transparent 60%),
+          radial-gradient(ellipse at 90% 65%, var(--glow2), transparent 58%),
+          linear-gradient(145deg, var(--base1), var(--base2));
+        transition: background 1s ease;
+      }
+
+      body.sunny {
+        --base1: #1e63e0;
+        --base2: #b45309;
+        --glow1: #fbbf24aa;
+        --glow2: #38bdf877;
+      }
+
+      body.cloudy {
+        --base1: #3f6199;
+        --base2: #1e2f4d;
+        --glow1: #93c5fd77;
+        --glow2: #a78bfa55;
+      }
+
+      body.rainy {
+        --base1: #0b44a8;
+        --base2: #0a1f4d;
+        --glow1: #3b82f6bb;
+        --glow2: #06b6d488;
+      }
+
+      body.snowy {
+        --base1: #3b8bc4;
+        --base2: #1e3a6e;
+        --glow1: #e0f2fbbb;
+        --glow2: #818cf888;
+      }
+
+      body.night {
+        --base1: #2d2078;
+        --base2: #080c24;
+        --glow1: #8b5cf699;
+        --glow2: #4338ca88;
+      }
+
+      body.sunny,
+      body.cloudy,
+      body.rainy,
+      body.snowy,
+      body.night {
+        background: var(--base2);
+      }
+
+      .glass {
+        background: rgba(255, 255, 255, 0.055);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+      }
+
+      .glass-light {
+        background: rgba(255, 255, 255, 0.085);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+      }
+
+      .muted {
+        color: #c7d3e6;
+      }
+      .weather-icon {
+        width: 105px;
+        height: 105px;
+        object-fit: contain;
+      }
+      .hour-icon {
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
+      }
+
+      .swiper-slide {
+        height: auto;
+      }
+      .hour-card {
+        transition:
+          background 0.25s,
+          transform 0.25s;
+      }
+      .hour-card:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .search-input {
+        background: rgba(255, 255, 255, 0.055);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: white;
+      }
+
+      .search-input::placeholder {
+        color: #94a3b8;
+      }
+      .search-input:focus {
+        outline: 2px solid #93c5fd50;
+      }
+
+      .weather-orb {
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        right: 0;
+        top: 20px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 35% 30%,
+          #ffffff28,
+          #60a5fa08 60%,
+          transparent 72%
+        );
+        filter: blur(8px);
+        pointer-events: none;
+      }
+
+      .weather-main {
+        position: relative;
+        overflow: hidden;
+      }
+      .weather-main > *:not(.weather-orb) {
+        position: relative;
+        z-index: 1;
+      }
+
+      .loader {
+        width: 22px;
+        height: 22px;
+        border: 2px solid #ffffff30;
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #93c5fd;
+        outline-offset: 3px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="cloudy">
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <!-- HEADER -->
+      <header class="flex items-center justify-between gap-4 mb-8">
+        <a
+          href="./index.html"
+          class="flex items-center gap-3"
+          aria-label="Atmos — главная"
+        >
+          <div class="glass rounded-2xl p-3">
+            <i data-lucide="cloud-sun" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight">
+              atmos<span class="text-sky-300">.</span>
+            </h1>
+            <p class="muted text-xs">Погода вокруг тебя</p>
+          </div>
+        </a>
+
+        <button
+          id="locationBtn"
+          class="btn glass border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-2xl normal-case"
+        >
+          <i data-lucide="map-pin" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Моё местоположение</span>
+          <span class="sm:hidden">Геолокация</span>
+        </button>
+      </header>
+
+      <!-- SEARCH -->
+      <form id="searchForm" class="flex gap-2 mb-6">
+        <label
+          class="glass flex items-center gap-3 rounded-2xl px-4 flex-1 min-w-0"
+        >
+          <i data-lucide="search" class="w-5 h-5 muted shrink-0"></i>
+          <input
+            id="cityInput"
+            type="search"
+            class="input input-ghost search-input w-full border-0 focus:outline-none px-0"
+            placeholder="Найти город..."
+            aria-label="Название города"
+            autocomplete="off"
+          />
+        </label>
+        <button
+          class="btn btn-info rounded-2xl px-5 text-slate-950 border-0"
+          type="submit"
+        >
+          Найти
+        </button>
+      </form>
+
+      <p
+        id="status"
+        role="status"
+        aria-live="polite"
+        class="muted text-sm mb-5 min-h-5"
+      ></p>
+
+      <!-- CURRENT WEATHER -->
+      <section id="weatherPanel" class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <article
+          class="glass weather-main rounded-3xl p-6 sm:p-9 lg:col-span-3 min-h-[330px]"
+        >
+          <div class="weather-orb"></div>
+
+          <div class="flex justify-between gap-4">
+            <div>
+              <p id="todayLabel" class="muted text-sm mb-2">Текущая погода</p>
+              <h2
+                id="cityName"
+                class="text-3xl sm:text-4xl font-semibold tracking-tight"
+              >
+                Ташкент
+              </h2>
+              <p id="countryName" class="muted mt-2">Узбекистан</p>
+            </div>
+            <span
+              id="weatherBadge"
+              class="badge border-white/15 bg-white/10 text-white p-3 h-auto"
+              >Сейчас</span
+            >
+          </div>
+
+          <div class="flex items-center justify-between gap-2 mt-8">
+            <div>
+              <div class="flex items-start">
+                <span
+                  id="temperature"
+                  class="text-7xl sm:text-8xl font-medium tracking-[-0.07em]"
+                  >--</span
+                >
+                <span class="text-3xl mt-2">°</span>
+              </div>
+              <p id="description" class="text-lg mt-2 capitalize">
+                Загрузка погоды...
+              </p>
+              <p class="muted text-sm mt-2">
+                Ощущается как <span id="feelsLike">--</span>°
+              </p>
+            </div>
+            <img
+              id="mainIcon"
+              class="weather-icon shrink-0"
+              src="https://openweathermap.org/img/wn/03d@2x.png"
+              alt="Иконка текущей погоды"
+            />
+          </div>
+
+          <div
+            class="border-t border-white/10 mt-7 pt-5 flex flex-wrap gap-x-6 gap-y-3 muted text-sm"
+          >
+            <span class="flex items-center gap-2"
+              ><i data-lucide="sunrise" class="w-4 h-4"></i
+              ><span
+                >Восход <b id="sunrise" class="text-white ml-1">--:--</b></span
+              ></span
+            >
+            <span class="flex items-center gap-2"
+              ><i data-lucide="sunset" class="w-4 h-4"></i
+              ><span
+                >Закат <b id="sunset" class="text-white ml-1">--:--</b></span
+              ></span
+            >
+          </div>
+        </article>
+
+        <!-- DETAILS -->
+        <article class="glass rounded-3xl p-6 lg:col-span-2">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="font-semibold text-lg">Детали погоды</h2>
+            <i data-lucide="activity" class="w-5 h-5 muted"></i>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="glass-light rounded-2xl p-4">
+              <i data-lucide="droplets" class="w-5 h-5 text-sky-300 mb-4"></i>
+              <p class="muted text-xs">Влажность</p>
+              <p id="humidity" class="text-2xl font-semibold mt-1">--%</p>
+            </div>
+            <div class="glass-light rounded-2xl p-4">
+              <i data-lucide="wind" class="w-5 h-5 text-sky-300 mb-4"></i>
+              <p class="muted text-xs">Ветер</p>
+              <p id="wind" class="text-2xl font-semibold mt-1">--</p>
+              <p class="muted text-xs">м/с</p>
+            </div>
+            <div class="glass-light rounded-2xl p-4">
+              <i data-lucide="gauge" class="w-5 h-5 text-sky-300 mb-4"></i>
+              <p class="muted text-xs">Давление</p>
+              <p id="pressure" class="text-2xl font-semibold mt-1">--</p>
+              <p class="muted text-xs">гПа</p>
+            </div>
+            <div class="glass-light rounded-2xl p-4">
+              <i data-lucide="eye" class="w-5 h-5 text-sky-300 mb-4"></i>
+              <p class="muted text-xs">Видимость</p>
+              <p id="visibility" class="text-2xl font-semibold mt-1">--</p>
+              <p class="muted text-xs">км</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- HOURLY FORECAST -->
+      <section class="mt-8">
+        <div class="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Прогноз по часам</h2>
+            <p class="muted text-sm mt-1">Ближайшие часы</p>
+          </div>
+          <div class="flex gap-2">
+            <button
+              id="prevHour"
+              aria-label="Предыдущие часы"
+              class="btn btn-circle glass border-white/10 bg-white/5 text-white btn-sm"
+            >
+              ‹
+            </button>
+            <button
+              id="nextHour"
+              aria-label="Следующие часы"
+              class="btn btn-circle glass border-white/10 bg-white/5 text-white btn-sm"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+
+        <div class="glass rounded-3xl p-4 sm:p-5">
+          <div class="swiper" id="hourlySwiper">
+            <div id="hourlyList" class="swiper-wrapper">
+              <div class="swiper-slide">
+                <div class="hour-card rounded-2xl p-4">Загрузка...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FIVE DAY FORECAST -->
+      <section class="mt-8 mb-10">
+        <div class="mb-4">
+          <h2 class="text-xl font-semibold">На ближайшие дни</h2>
+          <p class="muted text-sm mt-1">Прогноз на 5 дней</p>
+        </div>
+        <div
+          id="dailyList"
+          class="glass rounded-3xl p-4 sm:p-6 divide-y divide-white/10"
+        >
+          <p class="muted p-3">Загрузка прогноза...</p>
+        </div>
+      </section>
+
+      <footer
+        class="border-t border-white/10 py-6 flex flex-col sm:flex-row justify-between gap-3 muted text-xs"
+      >
+        <p>© <span id="year"></span> Atmos. Погода для твоего города.</p>
+        <p>Данные предоставлены OpenWeatherMap.</p>
+      </footer>
+    </main>
+
+    <div
+      id="installBanner"
+      role="dialog"
+      aria-label="Установка приложения"
+      hidden
+      class="install-banner glass-light fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-96 z-50 rounded-3xl p-4 shadow-2xl"
+    >
+      <div class="flex items-start gap-3">
+        <img
+          src="icons/icon-192.png"
+          alt=""
+          class="w-12 h-12 rounded-2xl shrink-0"
+        />
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold">Установить Atmos</p>
+          <p id="installText" class="muted text-sm mt-1">
+            Добавь приложение на рабочий стол: оно откроется быстрее и будет
+            работать как обычное.
+          </p>
+        </div>
+        <button
+          id="installClose"
+          aria-label="Закрыть"
+          class="btn btn-ghost btn-circle btn-xs text-white"
+        >
+          ✕
+        </button>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button
+          id="installBtn"
+          class="btn btn-info rounded-2xl flex-1 text-slate-950 border-0"
+        >
+          Установить
+        </button>
+        <button
+          id="installLater"
+          class="btn glass border-white/10 bg-white/5 text-white rounded-2xl"
+        >
+          Позже
+        </button>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="pwa.js"></script>
+  </body>
+</html>
